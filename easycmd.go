@@ -9,6 +9,11 @@ package easycmd
 // A command is a typical cli command, a bunch of flags, flag.Parse(),
 // and then the main body. A setup function is usually definition of
 // common flags.
+//
+// We can specify a command with its unique prefix. For example, if we
+// have two commands, "db create" and "db query", we can run "db
+// create" with "d c" because "d" is the unique prefix of "db", and
+// "c" is the unique prefix of "create".
 import (
 	"flag"
 	"fmt"
@@ -76,6 +81,23 @@ func Main() {
 	}
 }
 
+func matchCmd(children map[string]*cmdInfo, c string) (*cmdInfo, bool) {
+	cci, ok := children[c]
+	if ok {
+		return cci, true
+	}
+	for k, x := range children {
+		if !strings.HasPrefix(k, c) {
+			continue
+		}
+		if cci != nil {
+			return nil, false
+		}
+		cci = x
+	}
+	return cci, cci != nil
+}
+
 func findCmd(ci *cmdInfo, args []string) (_ *cmdInfo, fns []func(), chain []string) {
 	chain = append(chain, args[0])
 	if ci.fn != nil {
@@ -86,7 +108,7 @@ func findCmd(ci *cmdInfo, args []string) (_ *cmdInfo, fns []func(), chain []stri
 		if strings.HasPrefix(c, "-") {
 			break
 		}
-		cci, ok := ci.children[c]
+		cci, ok := matchCmd(ci.children, c)
 		if !ok {
 			break
 		}
@@ -111,13 +133,39 @@ func runCmd(ci *cmdInfo, fns []func(), cmd string) bool {
 	return true
 }
 
+func buildPrefix(children map[string]*cmdInfo) map[string]string {
+	prefixes := make(map[string]string, len(children))
+	for k := range children {
+	L:
+		for i := range k {
+			if i == 0 {
+				continue
+			}
+			p := k[:i]
+			for x := range children {
+				if x == k {
+					continue
+				}
+				if strings.HasPrefix(x, p) {
+					continue L
+				}
+			}
+			prefixes[k] = p
+			break
+		}
+	}
+	return prefixes
+}
+
 func printHelp(cmd string, ci *cmdInfo) {
 	stderr := flag.CommandLine.Output()
 	fmt.Fprintf(stderr, "Usage of %s:\n", cmd)
 
 	tw := tabwriter.NewWriter(stderr, 2, 4, 2, ' ', 0)
+	prefixes := buildPrefix(ci.children)
 	for k, ci := range ci.children {
-		fmt.Fprintf(tw, "\t%s\t%s\n", k, ci.desc)
+		p := prefixes[k]
+		fmt.Fprintf(tw, "\t%s·%s\t%s\n", p, k[len(p):], ci.desc)
 	}
 	tw.Flush()
 }

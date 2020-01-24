@@ -28,9 +28,16 @@ func runDBQuery() {
 	fmt.Println("query db", db, *key, *last)
 }
 
+func runDBCheck() {
+	flag.Parse()
+
+	fmt.Println("check db", db)
+}
+
 func main() {
 	easycmd.Handle("db", defineDBFlags, "commands to operate a DB")
 	easycmd.Handle("db create", runDBCreate, "create a db")
+	easycmd.Handle("db check", runDBCheck, "check a db")
 	easycmd.Handle("db query", runDBQuery, "query a db")
 	easycmd.Main()
 }
