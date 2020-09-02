@@ -23,6 +23,10 @@ import (
 	"text/tabwriter"
 )
 
+// Version of the cmd. This variable is set as a go ldflags var,
+// e.g. "-X github.com/zncoder/easycmd.Version=$(git rev-parse HEAD)"
+var Version string
+
 type cmdInfo struct {
 	desc string
 	fn   func()
@@ -34,6 +38,9 @@ var root = &cmdInfo{children: make(map[string]*cmdInfo)}
 
 // Handle registers a cmd. Cmd is a space separated cmd chain,
 // e.g. "db create".
+// Intermediate cmd is a prefix of the cmd chain, and cannot
+// be used to run a cmd, but it can be used to define
+// common flags for its child cmds.
 func Handle(cmd string, fn func(), desc string) {
 	if fn == nil {
 		log.Fatal("empty fn")
