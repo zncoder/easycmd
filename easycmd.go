@@ -80,6 +80,7 @@ func addCmd(ci *cmdInfo, chain []string, fn func(), desc string) error {
 
 // Main runs the command.
 func Main() {
+	Handle("version", func() { fmt.Println(Version) }, "show version")
 	ci, fns, chain := findCmd(root, os.Args)
 	cmd := strings.Join(chain, " ")
 	os.Args = append([]string{cmd}, os.Args[len(chain):]...)
